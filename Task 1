@@ -1,0 +1,110 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.json.JSONObject;
+
+public class ApiService {
+
+    private static final String BASE_URL = "https://jsonplaceholder.typicode.com/users";
+
+    public static JSONObject createNewUser(JSONObject userData) {
+        return sendRequest(BASE_URL, "POST", userData);
+    }
+
+    public static JSONObject updateUser(int userId, JSONObject updatedUserData) {
+        String apiUrl = BASE_URL + "/" + userId;
+        return sendRequest(apiUrl, "PUT", updatedUserData);
+    }
+
+    public static int deleteUser(int userId) {
+        String apiUrl = BASE_URL + "/" + userId;
+        return sendDeleteRequest(apiUrl);
+    }
+
+    public static JSONObject getAllUsers() {
+        String apiUrl = BASE_URL;
+        return sendGetRequest(apiUrl);
+    }
+
+    public static JSONObject getUserById(int userId) {
+        String apiUrl = BASE_URL + "/" + userId;
+        return sendGetRequest(apiUrl);
+    }
+
+    public static JSONObject getUserByUsername(String username) {
+        String apiUrl = BASE_URL + "?username=" + username;
+        return sendGetRequest(apiUrl);
+    }
+
+    private static JSONObject sendRequest(String apiUrl, String method, JSONObject data) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod(method);
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setDoOutput(true);
+
+            if (data != null) {
+                try (OutputStream os = connection.getOutputStream()) {
+                    os.write(data.toString().getBytes());
+                    os.flush();
+                }
+            }
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    return new JSONObject(response.toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private static int sendDeleteRequest(String apiUrl) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("DELETE");
+            int responseCode = connection.getResponseCode();
+            connection.disconnect();
+            return responseCode;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+    private static JSONObject sendGetRequest(String apiUrl) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    } //im crazy about that is the last hw to do( i will miss you mane(((
+                    return new JSONObject(response.toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
