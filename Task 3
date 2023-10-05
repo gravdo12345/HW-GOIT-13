@@ -1,0 +1,67 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.FileWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+public class Main {
+
+    private static final String BASE_URL = "https://jsonplaceholder.typicode.com/users";
+
+    public static void main(String[] args) {
+        int userId = 1;
+        String outputFilePath = "user-" + userId + "-todos.json";
+        getAndSaveOpenTasksForUser(userId, outputFilePath);
+    }
+
+    private static void getAndSaveOpenTasksForUser(int userId, String outputFilePath) {
+        JSONObject userTodos = getUserTodos(userId);
+        if (userTodos != null) {
+            JSONArray todos = userTodos.getJSONArray("todos");
+            try (FileWriter fileWriter = new FileWriter(outputFilePath)) {
+                for (int i = 0; i < todos.length(); i++) {
+                    JSONObject todo = todos.getJSONObject(i);
+                    if (!todo.getBoolean("completed")) {
+                        fileWriter.write(todo.toString() + "\n");
+                    }
+                }
+                System.out.println("Відкриті задачі користувача з id " + userId + " були успішно записані у файл " + outputFilePath);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            System.out.println("Не вдалося отримати відкриті задачі для користувача з id " + userId);
+        }
+    }
+
+    private static JSONObject getUserTodos(int userId) {
+        String apiUrl = "https://jsonplaceholder.typicode.com/users/" + userId + "/todos";
+        return sendGetRequest(apiUrl);
+    }
+
+    private static JSONObject sendGetRequest(String apiUrl) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    return new JSONObject(response.toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+}
