@@ -1,0 +1,73 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.FileWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
+import org.json.JSONObject;
+
+public class Main {
+
+    private static final String BASE_URL = "https://jsonplaceholder.typicode.com/users";
+
+    public static void main(String[] args) {
+        int userId = 1;
+        String outputFilePath = "user-" + userId + "-post-comments.json";
+        getAndSaveCommentsForLatestPost(userId, outputFilePath);
+    }
+
+    private static void getAndSaveCommentsForLatestPost(int userId, String outputFilePath) {
+        JSONObject user = getUserById(userId);
+        if (user != null) {
+            int latestPostId = user.getInt("id");
+            JSONObject postComments = getCommentsForPost(latestPostId);
+            if (postComments != null) {
+                try (FileWriter fileWriter = new FileWriter(outputFilePath)) {
+                    fileWriter.write(postComments.toString());
+                    System.out.println("Comments for the latest post of user " + userId + " saved to " + outputFilePath);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else {
+                System.out.println("Failed to get comments for the latest post of user " + userId);
+            }
+        } else {
+            System.out.println("User with id " + userId + " not found.");
+        }
+    }
+
+    private static JSONObject getCommentsForPost(int postId) {
+        String apiUrl = "https://jsonplaceholder.typicode.com/posts/" + postId + "/comments";
+        return sendGetRequest(apiUrl);
+    }
+
+    private static JSONObject getUserById(int userId) {
+        String apiUrl = BASE_URL + "/" + userId;
+        return sendGetRequest(apiUrl);
+    }
+
+    private static JSONObject sendGetRequest(String apiUrl) {
+        try {
+            URL url = new URL(apiUrl);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+
+            int responseCode = connection.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                try (BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    StringBuilder response = new StringBuilder();
+                    String inputLine;
+                    while ((inputLine = in.readLine()) != null) {
+                        response.append(inputLine);
+                    }
+                    return new JSONObject(response.toString());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+        //IS
+    }
+}
