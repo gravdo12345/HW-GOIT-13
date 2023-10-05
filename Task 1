@@ -83,7 +83,7 @@ public class ApiService {
             e.printStackTrace();
         }
         return -1;
-    }
+    } //GOD
 
     private static JSONObject sendGetRequest(String apiUrl) {
         try {
